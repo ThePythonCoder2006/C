@@ -9,24 +9,19 @@ int main(int argc, char **argv)
     {
         usage();
         exit(EXIT_FAILURE);
-    }
-    
-    if(argv[1] != "txt" || argv[1] != "file")
+    }    
+
+    printf("%i\n", argv[1] == "txt");
+    if (argv[1] == "txt")
     {
+        fprintf(stderr, "TODO: encoding text from console is not implemented yet");
+    } else if(argv[1] == "file")
+    {
+        fprintf(stderr, "TODO: encoding from file is not implemented yet");
+    } else {
         usage();
         fprintf(stderr, "               ^must be 'txt' or 'file'\n");
     }
-
-    switch (argv)
-    {
-    case "file":
-        fprintf(stderr, "TODO: file encoding not implemented yet");
-        break;
-    
-    default:
-        break;
-    }
-    return 0;
 }
 
 void usage()
