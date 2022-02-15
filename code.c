@@ -2,8 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
-//------------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------------
+run code in vsc terminal :
+cd "c:\Users\paul\Desktop\documents\Programation\C\" ; if ($?) { gcc code.c -o code } ; if ($?) { .\code encode file input.txt output.txt 0 0 }
+------------------------------------------------------------------------------------*/
 
 void usage();
 
@@ -15,7 +19,7 @@ FILE *open_file_or_panic(char path[], char mode[]);
 
 char *hex(int val);
 
-char *fhex(int val, int key, int identifier);
+char *fhex(int val, int key, short identifier);
 
 //------------------------------------------------------------------------------------
 
@@ -27,7 +31,9 @@ int l_count[l_len] = {0};
 
 int main(int argc, char **argv)
 {
-  if (argc != 6)
+  srand(time(NULL));
+
+  if (argc != 7)
   {
     usage();
     exit(EXIT_FAILURE);
@@ -62,7 +68,7 @@ int main(int argc, char **argv)
   //------------------------------------------------------------------------------------
 
   if (bool_encode){
-    int ret = encode(argv[3], file, argv[4], (int) argv[5], (int) argv[6]);
+    int ret = encode(argv[3], file, argv[4], atoi(argv[5]), atoi(argv[6]));
     if(ret)
     {
       fprintf(stderr, "ERRROR: error appended while encoding. return with code '1'");
@@ -81,7 +87,12 @@ int main(int argc, char **argv)
 
   //------------------------------------------------------------------------------------
 
-  printf("%s\n", hex(234867835));
+  printf("key iden: %s\n", argv[6]);
+
+  for (int i = 0; i < 10; i++)
+  {
+    //printf("%s\n", fhex(i, 88, 5));
+  }
 
   return 0;
 }//main
@@ -113,6 +124,28 @@ char *hex(int val)
   return hex_val;
 }
 
+char *fhex(int val, int key, short identifier)
+{
+  static signed char fhex_val[50];
+
+  char tmp[7];
+  sprintf(tmp, "%i", identifier);
+
+  int iden_len = pow(10, strlen(tmp));
+  int iden = rand() % iden_len;
+
+  printf("%i\n", strlen(tmp));
+
+  while (iden == identifier)
+  {
+    iden = rand() % iden_len;
+  }
+
+  sprintf(fhex_val, "%ix%s", iden, hex(val));
+
+  return fhex_val;
+}
+
 int encode(char txt[], int file, char output_file[], int key, int key_identifier)
 {
   if (file)
@@ -125,13 +158,13 @@ int encode(char txt[], int file, char output_file[], int key, int key_identifier
       int character = fgetc(f_in);
       if (character >= 0) 
       {
-        char *out;
+        char out[50];
         for (int i = 0; i < l_len; i++)
         {
           if (character == letters[i])
           {
             l_count[i]++;
-            out = fhex(letters[i], key, key_identifier);
+            sprintf(out, "%s ", fhex(letters[i], key, key_identifier));
             break;
           }
         }
