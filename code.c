@@ -9,6 +9,10 @@ run code in vsc terminal :
 cd "c:\Users\paul\Desktop\documents\Programation\C\" ; if ($?) { gcc code.c -o code } ; if ($?) { .\code encode file input.txt output.txt 0 0 }
 ------------------------------------------------------------------------------------*/
 
+typedef struct Short_string {
+  char data[64];
+} short_str;
+
 void usage();
 
 int encode(char txt[], int file, char output_file[], int key, int key_identifier);
@@ -17,14 +21,20 @@ int decode(char txt[], int file, char output_file[]);
 
 FILE *open_file_or_panic(char path[], char mode[]);
 
-char *hex(int val);
+short_str hex(int val);
 
-char *fhex(int val, int key, short identifier);
+short_str fhex(int val, int key, short identifier);
+
+short_str mult_char(int len, char *c);
+
+short_str tidle(int len);
+
+short_str space(int len);
 
 //------------------------------------------------------------------------------------
 
-#define l_len 85
-const signed char letters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.+-*/=,;:!?%()[]{}&<>_";
+const signed char letters[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890.+-*=,;:!?%()[]{}&<>_/\n ";
+#define l_len (sizeof(letters) - 1)
 int l_count[l_len] = {0};
 
 //------------------------------------------------------------------------------------
@@ -33,22 +43,26 @@ int main(int argc, char **argv)
 {
   srand(time(NULL));
 
-  if (argc != 7)
-  {
-    usage();
-    exit(EXIT_FAILURE);
-  }
-
   int bool_encode = 0;
 
   if (strcmp(argv[1], "encode") == 0)
   {
     bool_encode = 1;
+    if (argc != 7)
+    {
+      usage();
+      exit(EXIT_FAILURE);
+    }
   } else if(strcmp(argv[1], "decode") == 0) {
     bool_encode = 0;
+    if (argc != 5)
+    {
+      usage();
+      exit(EXIT_FAILURE);
+    }
   } else {
+    fprintf(stderr, "code %s %s %s %s %s %s\n     ^%s <- must be 'encode' or 'decode'\n\n", argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], tidle(strlen(argv[1]) - 1).data);
     usage();
-    fprintf(stderr, "                  ^must be 'encode' or 'decode'\n");
     exit(EXIT_FAILURE);
   }
 
@@ -60,8 +74,9 @@ int main(int argc, char **argv)
   } else if(strcmp(argv[2], "file") == 0) {
     file = 1;
   } else {
+    fprintf(stderr, "code %s %s %s %s %s %s\n%s^%s <- must be 'txt' or 'file'\n\n", argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], space(strlen(argv[1]) + 4 + 2).data, tidle(strlen(argv[2]) - 1).data);
+    printf("ok\n");
     usage();
-    fprintf(stderr, "                              ^must be 'txt' or 'file'\n");
     exit(EXIT_FAILURE);
   }
 
@@ -87,19 +102,43 @@ int main(int argc, char **argv)
 
   //------------------------------------------------------------------------------------
 
-  printf("key iden: %s\n", argv[6]);
-
-  for (int i = 0; i < 10; i++)
-  {
-    //printf("%s\n", fhex(i, 88, 5));
-  }
+  short_str test = tidle(5);
 
   return 0;
 }//main
 
 void usage()
 {
-  fprintf(stderr, "USAGE: code encode/decode txt/file <file_in/text_in> <file_out> <encode_key> <key_identification>\n");
+  fprintf(stderr, "USAGE: code encode/decode txt/file <file_in/text_in> <file_out> <encode_key> <key_key_identifier>\n");
+  fprintf(stderr, "USAGE:   encode/decode: encode for text encoding and decode for its decoding.\n");
+  fprintf(stderr, "USAGE:   txt/file: txt for encoding/decoding text directly from the text written in <file_in/text_in> to <file_out> or file to use the file in <file_in/text_in>.\n");
+  fprintf(stderr, "USAGE:   <file_in/text_in>: the text that will be encoded/decoded or the path to the file that will be encoded. MUST BE A VALID FILE PATH IF txt/file is file !\n");
+  fprintf(stderr, "USAGE:   <file_out>: the path to the file in wich the encoded text will be pasted.\n");
+  fprintf(stderr, "USAGE:   <encode_key>: the secret key that will be used to offset the char value. FOR ENCODING ONLY\n");
+  fprintf(stderr, "USAGE:   <key_identifier>: the identifier of the secret key. FOR ENCODING ONLY\n");
+}
+
+short_str mult_char(int len, char *c)
+{
+  short_str chars;
+
+  strcpy(chars.data, c);
+
+  for (int i = 1; i < len; i++)
+  {
+    strcat(chars.data, c);
+  }
+  return chars;
+}
+
+short_str tidle(int len)
+{
+  return mult_char(len, "~");
+}
+
+short_str space(int len)
+{
+  return mult_char(len, " ");
 }
 
 FILE *open_file_or_panic(char path[], char mode[])
@@ -115,18 +154,18 @@ FILE *open_file_or_panic(char path[], char mode[])
   return f;
 }
 
-char *hex(int val)
+short_str hex(int val)
 {
-  static signed char hex_val[50];
+  short_str hex_val;
 
-  sprintf(hex_val, "%x", val);
+  sprintf(hex_val.data, "%x", val);
 
   return hex_val;
 }
 
-char *fhex(int val, int key, short identifier)
+short_str fhex(int val, int key, short identifier)
 {
-  static signed char fhex_val[50];
+  short_str fhex_val;
 
   char tmp[7];
   sprintf(tmp, "%i", identifier);
@@ -134,14 +173,10 @@ char *fhex(int val, int key, short identifier)
   int iden_len = pow(10, strlen(tmp));
   int iden = rand() % iden_len;
 
-  printf("%i\n", strlen(tmp));
-
   while (iden == identifier)
   {
     iden = rand() % iden_len;
   }
-
-  sprintf(fhex_val, "%ix%s", iden, hex(val));
 
   return fhex_val;
 }
@@ -155,7 +190,7 @@ int encode(char txt[], int file, char output_file[], int key, int key_identifier
 
     while (!(feof(f_in)))
     {
-      int character = fgetc(f_in);
+      char character = fgetc(f_in);
       if (character >= 0) 
       {
         char out[50];
@@ -163,16 +198,15 @@ int encode(char txt[], int file, char output_file[], int key, int key_identifier
         {
           if (character == letters[i])
           {
+            
             l_count[i]++;
-            sprintf(out, "%s ", fhex(letters[i], key, key_identifier));
+            sprintf(out, "%s ", fhex(i, key, key_identifier));
             break;
           }
         }
         fputs(out, f_out);
       }
     }
-    
-
     fclose(f_out);
     fclose(f_in);
   }
@@ -181,6 +215,7 @@ int encode(char txt[], int file, char output_file[], int key, int key_identifier
 
 int decode(char txt[], int file, char output_file[])
 {
+  //getting key
   fprintf(stderr, "TODO: decoding implemented yet\n");
   return 0;
 }
