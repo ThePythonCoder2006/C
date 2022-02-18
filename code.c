@@ -11,25 +11,27 @@ cd "c:\Users\paul\Desktop\documents\Programation\C\" ; if ($?) { gcc code.c -o c
 
 typedef struct Short_string {
   char data[64];
-} short_str;
+} sstr;
 
 void usage();
 
 int encode(char txt[], int file, char output_file[], int key, int key_identifier);
 
-int decode(char txt[], int file, char output_file[]);
+int decode(char txt[], int file, char output_file[], char key[]);
 
 FILE *open_file_or_panic(char path[], char mode[]);
 
-short_str hex(int val);
+sstr hex(int val);
 
-short_str fhex(int val, int key, short identifier);
+sstr fhex(int val, int key, short identifier);
 
-short_str mult_char(int len, char *c);
+int hexti(char val[]);
 
-short_str tidle(int len);
+sstr mult_char(int len, char *c);
 
-short_str space(int len);
+sstr tidle(int len);
+
+sstr space(int len);
 
 //------------------------------------------------------------------------------------
 
@@ -55,7 +57,7 @@ int main(int argc, char **argv)
     }
   } else if(strcmp(argv[1], "decode") == 0) {
     bool_encode = 0;
-    if (argc != 5)
+    if (argc != 6)
     {
       usage();
       exit(EXIT_FAILURE);
@@ -90,7 +92,7 @@ int main(int argc, char **argv)
     }
 
   } else if(!bool_encode) {
-    int ret = decode(argv[3], file, argv[4]);
+    int ret = decode(argv[3], file, argv[4], argv[5]);
     if(ret)
     {
       fprintf(stderr, "ERRROR: error appended while encoding. return with code '1'");
@@ -102,7 +104,7 @@ int main(int argc, char **argv)
 
   //------------------------------------------------------------------------------------
 
-  short_str test = tidle(5);
+  sstr test = tidle(5);
 
   return 0;
 }//main
@@ -118,9 +120,9 @@ void usage()
   fprintf(stderr, "USAGE:   <key_identifier>: the identifier of the secret key. FOR ENCODING ONLY\n");
 }
 
-short_str mult_char(int len, char *c)
+sstr mult_char(int len, char *c)
 {
-  short_str chars;
+  sstr chars;
 
   strcpy(chars.data, c);
 
@@ -131,12 +133,12 @@ short_str mult_char(int len, char *c)
   return chars;
 }
 
-short_str tidle(int len)
+sstr tidle(int len)
 {
   return mult_char(len, "~");
 }
 
-short_str space(int len)
+sstr space(int len)
 {
   return mult_char(len, " ");
 }
@@ -154,18 +156,18 @@ FILE *open_file_or_panic(char path[], char mode[])
   return f;
 }
 
-short_str hex(int val)
+sstr hex(int val)
 {
-  short_str hex_val;
+  sstr hex_val;
 
   sprintf(hex_val.data, "%x", val);
 
   return hex_val;
 }
 
-short_str fhex(int val, int key, short identifier)
+sstr fhex(int val, int key, short identifier)
 {
-  short_str fhex_val;
+  sstr fhex_val;
 
   char tmp[7];
   sprintf(tmp, "%i", identifier);
@@ -179,6 +181,14 @@ short_str fhex(int val, int key, short identifier)
   }
 
   return fhex_val;
+}
+
+int hexti(char val[])
+{
+  sstr tmp;
+  sprintf(tmp.data, "%i", val);
+  printf("%s\n", tmp.data);
+
 }
 
 int encode(char txt[], int file, char output_file[], int key, int key_identifier)
@@ -213,9 +223,20 @@ int encode(char txt[], int file, char output_file[], int key, int key_identifier
   return 0;
 }
 
-int decode(char txt[], int file, char output_file[])
+int decode(char txt[], int file, char output_file[], char key[])
 {
-  //getting key
-  fprintf(stderr, "TODO: decoding implemented yet\n");
+  FILE *in = open_file_or_panic(txt, "r");
+  FILE *out = open_file_or_panic(output_file, "w");
+
+  sstr word;
+  strcpy(word.data, fgetc(in));
+  while (!(feof(in)))
+  {
+    char letter = fgetc(in);
+  }
+  
+
+  fclose(in);
+  fclose(out);
   return 0;
 }
