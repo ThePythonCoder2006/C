@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include "c_mpg.h"
+#include "c_mpq.h"
 
 #include <mpir.h>
 

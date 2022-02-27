@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "c_mpf.h"
 
 #include <mpir.h>
 
