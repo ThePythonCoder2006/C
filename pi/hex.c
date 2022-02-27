@@ -8,30 +8,30 @@
 
 //--------------------------------------------------------------------------------------------
 
-#define PREC 1024
+#define PREC 1 * 1024
 
 //--------------------------------------------------------------------------------------------
 
 int main(void)
 {
-	printf("ok\n");
-
-	FILE *f = fopen("out.txt", "w");
+	mpq_t sqrt2;
+	mpq_init_set_str(sqrt2, "2", 10);
+	mpq_sqrt(sqrt2, sqrt2, PREC);
 
 	mpq_t a0;
-	mpq_init_set_str(a0, "1/80", 10);
+	mpq_init_set_str(a0, "1/3", 10);
 
-	mpf_t e;
-	mpf_init2(e, PREC);
+	mpq_t s1;
+	mpq_init(s1);
+	mpq_set(s1, sqrt2);
+	mpq_sub_ui(s1, s1, 1);
 
-	mpq_sqrt(a0, a0);
-
-  mpf_set_q(e, a0);
-
-	printf("PI: "); mpf_out_str(stdout, 10, 0, e); printf("\n");
+	printf("PI: "); mpq_dec_out_str(stdout, 10, PREC, s1); printf("\n");
 
 	mpq_clear(a0);
-	mpf_clear(e);
+	mpq_clear(s1);
+
+	FILE *f = fopen("out.txt", "w");
 
 	fclose(f);
 }
