@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "custom mpir libs/c_mpq.h"
-#include "custom mpir libs/c_mpf.h"
+#include "c_mpq.h"
+#include "c_mpf.h"
 
 #include <mpir.h>
 
