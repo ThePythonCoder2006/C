@@ -26,6 +26,11 @@ int main(void)
 	mpq_set(s1, sqrt2);
 	mpq_sub_ui(s1, s1, 1);
 
+	mpq_t s1x;
+	mpq_init(s1x);
+
+	mpq_snx(s1x, 1);
+
 	printf("PI: "); mpq_dec_out_str(stdout, 10, PREC, s1); printf("\n");
 
 	mpq_clear(a0);
