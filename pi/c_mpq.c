@@ -128,3 +128,9 @@ void mpq_ui_sub(mpq_t rop, unsigned int op1, mpq_t op2)
 
 	mpq_clear(m_op1);
 }
+
+void mpq_snx(mpq_t rop, int n)
+{
+	(void) rop;
+	(void) n;
+}
