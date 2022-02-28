@@ -117,7 +117,7 @@ void mpq_sub_ui(mpq_t rop, mpq_t op1, unsigned int op2)
 	mpq_clear(m_op2);
 }
 
-void mpq_sub_ui(mpq_t rop, unsigned int op1, mpq_t op2)
+void mpq_ui_sub(mpq_t rop, unsigned int op1, mpq_t op2)
 {
 	mpq_t m_op1;
 	mpq_init(m_op1);
