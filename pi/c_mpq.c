@@ -95,6 +95,19 @@ void mpq_2nth_root(mpq_t rop, mpq_t op, int prec, int n)
 	mpf_clear(q);
 }
 
+void mpq_pow_ui(mpq_t rop, mpq_t op1, unsigned int op2)
+{
+	mpf_t tmp;
+	mpf_init(tmp);
+	mpf_set_q(tmp, op1);
+
+	mpf_pow_ui(tmp, tmp, op2);
+
+	mpq_set_z(rop, tmp);
+
+	mpf_clear(tmp);
+}
+
 void mpq_sqrt(mpq_t rop, mpq_t op, int prec)
 {
 	mpq_2nth_root(rop, op, prec, 1);
@@ -131,6 +144,5 @@ void mpq_ui_sub(mpq_t rop, unsigned int op1, mpq_t op2)
 
 void mpq_snx(mpq_t rop, int n)
 {
-	(void) rop;
-	(void) n;
+	mpq_pow_ui(rop, sn(n), 2);
 }
