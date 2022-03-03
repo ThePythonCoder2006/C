@@ -6,6 +6,16 @@
 
 #include <mpir.h>
 
+//GO TO DIR:
+//    cd C:/Users/Elève/Desktop/document/progra/C/pi
+//or  cd C:/Users/paul/Desktop/document/programation/C/pi
+
+//COMPILE:
+//  gcc *.c -o main -lmpir
+
+//RUN :
+//  ./main
+
 //--------------------------------------------------------------------------------------------
 
 #define PREC 10 * 1024
