@@ -4,6 +4,8 @@
 
 #include <mpir.h>
 
+#define ITER 5
+
 //initialisation functions
 //--------------------------------------------------------------------------------------------
 
@@ -145,4 +147,13 @@ void mpq_ui_sub(mpq_t rop, unsigned int op1, mpq_t op2)
 void mpq_snx(mpq_t rop, int n)
 {
 	mpq_pow_ui(rop, sn(n), 2);
+}
+
+void mpq_snx_wrapper(mpq_t rop, int n)
+{
+	#define CACHE_SIZE ITER + 1
+	mpq_t cache[CACHE_SIZE];
+	mpq_set(cache[ITER], NULL);
+
+	mpq_inits(cache);
 }
