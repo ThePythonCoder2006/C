@@ -2,12 +2,12 @@
 #include <stdlib.h>
 #include "dy_array.h"
 
-void int_arr_init(int_Arr *arr, int nEle)
+void int_arr_init(int_Arr *arr)
 {
-    arr->p = malloc(sizeof(int) * nEle + sizeof(arr->p));
+    arr->p = NULL;
 }
 
 void int_arr_cls(int_Arr *arr)
 {
-    free(arr->p);
+    free(arr);
 }

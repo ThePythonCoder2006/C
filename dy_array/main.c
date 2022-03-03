@@ -5,10 +5,9 @@
 
 int main(void)
 {
-    int_Arr *arr;
-    //int_arr_init(arr, 10);
+    int_Arr *arr = NULL;
+    int_arr_init(arr);
 
-
-    //int_arr_cls(arr);
+    int_arr_cls(arr);
     return 0;
 }
