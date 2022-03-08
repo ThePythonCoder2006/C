@@ -211,8 +211,6 @@ void mpq_sn(mpq_t rop, int n, int prec)
 	mpq_pow_ui(tmp, tmp, 2);
 
 	mpq_pow_ui(tmp2, tmp2, 2);
-	mpq_add
-
 
 	mpq_div(rop, rop, tmp);
 
