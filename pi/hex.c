@@ -1,20 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "c_mpq.h"
-#include "c_mpf.h"
 
-#include <mpir.h>
+#include <mpfr.h>
 
-//GO TO DIR:
-//    cd C:/Users/Elève/Desktop/document/progra/C/pi
-//or  cd C:/Users/paul/Desktop/document/programation/C/pi
+// GO TO DIR:
+//     cd C:/Users/Elève/Desktop/document/progra/C/pi
+// or  cd C:/Users/paul/Desktop/documents/programation/C/pi
 
-//COMPILE:
-//  gcc *.c -o main -lmpir
+// COMPILE:
+//   gcc *.c -o main -lmpfr -lgmp
 
-//RUN :
-//  ./main
+// RUN :
+//   ./main
 
 //--------------------------------------------------------------------------------------------
 
@@ -24,25 +22,17 @@
 
 int main(void)
 {
-	mpq_t sqrt2;
-	mpq_init_set_str(sqrt2, "2", 10);
-	mpq_sqrt(sqrt2, sqrt2, PREC);
+	mpfr_t third;
+	mpfr_init2(third, PREC);
 
-	mpq_t a0;
-	mpq_init_set_str(a0, "1/3", 10);
+	mpfr_set_ui(third, 1, MPFR_RNDN);
 
-	mpq_t s1x;
-	mpq_init(s1x);
+	mpfr_div_ui(third, third, 3, MPFR_RNDN);
 
-	mpq_snx(s1x, 1, PREC);
+	mpfr_out_str(stdout, 10, 0, third, 0);
 
-	printf("PI: "); mpq_dec_out_str(stdout, 10, PREC, a0); printf("\n");
-
-	mpq_clear(a0);
-
-	FILE *f = fopen("out.txt", "w");
-
-	fclose(f);
+	mpfr_clear(third);
+	return 0;
 }
 
 //--------------------------------------------------------------------------------------------
