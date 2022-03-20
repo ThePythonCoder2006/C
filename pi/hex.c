@@ -9,29 +9,31 @@
 // or  cd C:/Users/paul/Desktop/documents/programation/C/pi
 
 // COMPILE:
-//   gcc *.c -o main -lmpfr -lgmp
+//   gcc hex.c -o main -lmpfr -lgmp
 
 // RUN :
 //   ./main
 
 //--------------------------------------------------------------------------------------------
 
-#define PREC 10 * 1024
+#define DIGITS 1000000
+
+#define CONV 3.321928
+
+#define PREC DIGITS *CONV
 
 //--------------------------------------------------------------------------------------------
 
 int main(void)
 {
-	mpfr_t third;
-	mpfr_init2(third, PREC);
+	mpfr_t a0;
+	mpfr_init2(a0, PREC);
 
-	mpfr_set_ui(third, 1, MPFR_RNDN);
+	mpfr_set_ui(a0, 1, MPFR_RNDN);
 
-	mpfr_div_ui(third, third, 3, MPFR_RNDN);
+	mpfr_div_ui(a0, a0, 3, 0);
 
-	mpfr_out_str(stdout, 10, 0, third, 0);
-
-	mpfr_clear(third);
+	mpfr_clear(a0);
 	return 0;
 }
 
