@@ -58,12 +58,10 @@ int main(void)
 	mpfr_snx_init();
 
 	mpfr_snx(snx_cache[0], 0, PREC, 0);
+	mpfr_snx(snx_cache[1], 2, PREC, 0);
 
-	mpq_out_str(stdout, 10, a0);
 	printf("\n");
-	mpfr_out_str(stdout, 10, 0, sn_cache[0], 0);
-	printf("\n");
-	mpfr_out_str(stdout, 10, 0, snx_cache[0], 0);
+	mpfr_out_str(stdout, 10, 0, snx_cache[1], 0);
 
 	mpq_clear(a0);
 	mpfr_list_clear(sn_cache, ITER);
