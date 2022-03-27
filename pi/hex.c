@@ -50,6 +50,9 @@ int main(void)
 	mpq_init(a0);
 	mpq_set_ui(a0, 1, 3);
 
+	mpfr_t pi;
+	mpfr_init2(pi, PREC);
+
 	//----------------------------------
 	mpfr_list_init2(PREC, sn_c, CACHE);
 
@@ -67,12 +70,21 @@ int main(void)
 
 	mpfr_set_q(an_c[0], a0, 0);
 
+	mpfr_an(an_c[1], 1, PREC, 0);
+
+	mpfr_ui_div(pi, 1, an_c[1], 0);
+
+	printf("a0:\n");
+	mpfr_out_str(stdout, 10, 0, an_c[0], 0);
 	printf("\n");
-	mpfr_out_str(stdout, 10, 0, sn_c[0], 0);
+	printf("a1:\n");
+	mpfr_out_str(stdout, 10, 0, an_c[1], 0);
 	printf("\n");
-	printf("\n");
+	printf("PI=\n");
+	mpfr_out_str(stdout, 10, 0, pi, 0);
 
 	mpq_clear(a0);
+	mpfr_clear(pi);
 	mpfr_list_clear(sn_c, CACHE);
 	mpfr_list_clear(snx_c, CACHE);
 	mpfr_list_clear(an_c, CACHE);
@@ -115,8 +127,6 @@ void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 		mpfr_init2(snx, prec);
 		mpfr_snx(snx, n - 1, prec, round);
 
-		printf("ok\n");
-
 		mpfr_t u;
 		mpfr_init2(u, prec);
 		mpfr_sqr(u, snx, round);
@@ -129,7 +139,7 @@ void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 		mpfr_init2(t, prec);
 		mpfr_add_ui(t, snx, 1, round);
 
-		mpfr_printf("snx: %.60Rf\nu: %.60Rf\n", snx, u);
+		// mpfr_printf("snx: %.60Rf\nu: %.60Rf\n", snx, u);
 
 		//--------------
 
@@ -177,22 +187,63 @@ void mpfr_snx(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 {
 	assert(n <= ITER);
-	if (mpfr_nan_p(snx_c[n]) != 0)
+	if (mpfr_nan_p(an_c[n]) != 0)
 	{
 		printf("(an) n: %i\n", n);
 		assert(n > 0);
 
+		mpfr_t an1;
+		mpfr_init2(an1, prec);
+		mpfr_an(an1, n - 1, prec, round);
+
 		mpfr_t sn;
 		mpfr_init2(sn, prec);
+		mpfr_sn(sn, n - 1, prec, round);
 
 		mpfr_t t, m1, m2;
 		mpfr_inits2(prec, t, m1, m2, (mpfr_ptr)0);
 
+		mpfr_snx(t, n - 1, prec, round);
+		mpfr_add_ui(t, t, 1, round);
+		mpfr_sub_ui(rop, t, 1, round);
+		mpfr_printf("snx: %.60Rg\n", rop);
+
+		mpfr_add_ui(m1, sn, 1, round);
+		mpfr_div(m1, m1, t, round);
+		mpfr_pow_ui(m1, m1, 4, round);
+
+		mpfr_pow_si(m2, t, -4, round);
+
+		mpfr_printf("an-1: %.60Rf\nt : %.60Rf\nm1 : %.60Rf\nm2 : %.60Rf\n", an1, t, m1, m2);
+
 		mpfr_t tmp;
 		mpfr_init2(tmp, prec);
 
-		mpfr_mul_ui();
+		mpfr_mul_si(an_c[n], m1, -4, round);
+		mpfr_mul_si(tmp, m2, -12, round);
+		mpfr_add(an_c[n], tmp, an_c[n], round);
+		mpfr_add_ui(an_c[n], an_c[n], 1, round);
+		mpfr_printf("PLUS2: %.60Rg\n", an_c[n]);
 
+		mpfr_ui_pow_ui(tmp, 4, (2 * n) - 1, round);
+		mpfr_div_ui(tmp, tmp, 3, round);
+		mpfr_printf("PLUS1: %.60Rg\n", tmp);
+
+		mpfr_mul(an_c[n], an_c[n], tmp, round);
+		mpfr_neg(an_c[n], an_c[n], round);
+		mpfr_printf("PLUS: %.60Rf\n", an_c[n]);
+
+		mpfr_mul_ui(rop, m1, 16, round);
+		mpfr_mul(rop, rop, an1, round);
+		mpfr_printf("start: %.60Rf\n", rop);
+
+		int egal = mpfr_cmp(rop, an_c[n]);
+		printf("%i\n", egal);
+
+		mpfr_sub(an_c[n], rop, an_c[n], round);
+		mpfr_printf("an: %.60Rf\n", an_c[n]);
+
+		mpfr_clear(an1);
 		mpfr_clear(sn);
 		mpfr_clear(tmp);
 		mpfr_clears(t, m1, m2, (mpfr_ptr)0);
