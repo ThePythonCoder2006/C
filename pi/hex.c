@@ -28,13 +28,13 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
 
 //--------------------------------------------------------------------------------------------
 
-#define DIGITS 1000
+#define DIGITS 60000100
 
 #define CONV 3.321928
 
 #define PREC (DIGITS * CONV)
 
-#define ITER 5
+#define ITER 8
 
 #define CACHE (ITER + 1)
 
@@ -63,31 +63,36 @@ int main(void)
 	//----------------------------------
 	mpfr_list_init2(PREC, snx_c, CACHE);
 
-	mpfr_sn(sn_c[3], 3, PREC, 0);
+	// mpfr_sn(sn_c[3], 3, PREC, 0);
 
 	//----------------------------------
 	mpfr_list_init2(PREC, an_c, CACHE);
 
 	mpfr_set_q(an_c[0], a0, 0);
 
-	mpfr_an(an_c[1], 1, PREC, 0);
+	mpfr_an(an_c[ITER], ITER, PREC, 0);
 
-	mpfr_ui_div(pi, 1, an_c[1], 0);
+	mpfr_ui_div(pi, 1, an_c[ITER], 0);
 
-	printf("a0:\n");
-	mpfr_out_str(stdout, 10, 0, an_c[0], 0);
-	printf("\n");
-	printf("a1:\n");
-	mpfr_out_str(stdout, 10, 0, an_c[1], 0);
-	printf("\n");
-	printf("PI=\n");
-	mpfr_out_str(stdout, 10, 0, pi, 0);
+	// printf("a0:\n");
+	// mpfr_out_str(stdout, 10, 0, an_c[0], 0);
+	// printf("\n");
+	// printf("a1:\n");
+	// mpfr_out_str(stdout, 10, 0, an_c[1], 0);
+	// printf("\n");
+	// printf("PI=\n");
+	// mpfr_out_str(stdout, 10, 0, pi, 0);
+
+	FILE *out = fopen("out.txt", "w");
+
+	mpfr_fprintf(out, "%.60000000Rf\n", pi);
 
 	mpq_clear(a0);
 	mpfr_clear(pi);
 	mpfr_list_clear(sn_c, CACHE);
 	mpfr_list_clear(snx_c, CACHE);
 	mpfr_list_clear(an_c, CACHE);
+	mpfr_free_cache();
 	return 0;
 }
 
@@ -206,7 +211,6 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 		mpfr_snx(t, n - 1, prec, round);
 		mpfr_add_ui(t, t, 1, round);
 		mpfr_sub_ui(rop, t, 1, round);
-		mpfr_printf("snx: %.60Rg\n", rop);
 
 		mpfr_add_ui(m1, sn, 1, round);
 		mpfr_div(m1, m1, t, round);
@@ -214,38 +218,42 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 
 		mpfr_pow_si(m2, t, -4, round);
 
-		mpfr_printf("an-1: %.60Rf\nt : %.60Rf\nm1 : %.60Rf\nm2 : %.60Rf\n", an1, t, m1, m2);
+		// mpfr_printf("an-1: %.60Rf\nt : %.60Rf\nm1 : %.60Rf\nm2 : %.60Rf\n", an1, t, m1, m2);
 
-		mpfr_t tmp;
+		mpfr_t tmp, start;
 		mpfr_init2(tmp, prec);
+		mpfr_init2(start, prec);
 
 		mpfr_mul_si(an_c[n], m1, -4, round);
 		mpfr_mul_si(tmp, m2, -12, round);
 		mpfr_add(an_c[n], tmp, an_c[n], round);
 		mpfr_add_ui(an_c[n], an_c[n], 1, round);
-		mpfr_printf("PLUS2: %.60Rg\n", an_c[n]);
+		////mpfr_printf("PLUS2: %.60Rg\n", an_c[n]);
 
 		mpfr_ui_pow_ui(tmp, 4, (2 * n) - 1, round);
 		mpfr_div_ui(tmp, tmp, 3, round);
-		mpfr_printf("PLUS1: %.60Rg\n", tmp);
+		// mpfr_printf("PLUS1: %.60Rg\n", tmp);
 
 		mpfr_mul(an_c[n], an_c[n], tmp, round);
 		mpfr_neg(an_c[n], an_c[n], round);
-		mpfr_printf("PLUS: %.60Rf\n", an_c[n]);
+		// mpfr_printf("PLUS: %.60Rf\n", an_c[n]);
 
-		mpfr_mul_ui(rop, m1, 16, round);
-		mpfr_mul(rop, rop, an1, round);
-		mpfr_printf("start: %.60Rf\n", rop);
+		mpfr_mul_ui(start, m1, 16, round);
+		mpfr_mul(start, start, an1, round);
+		// mpfr_printf("start: %.60Rf\n", start);
 
-		int egal = mpfr_cmp(rop, an_c[n]);
-		printf("%i\n", egal);
+		// double dstart = mpfr_get_d(start, round);
+		// double plus = mpfr_get_d(an_c[n], round);
 
-		mpfr_sub(an_c[n], rop, an_c[n], round);
-		mpfr_printf("an: %.60Rf\n", an_c[n]);
+		// printf("%f - %f = %f\n", dstart, plus, dstart - plus);
+
+		mpfr_sub(an_c[n], start, an_c[n], round);
+		// mpfr_printf("an: %.60Rf\n", an_c[n]);
 
 		mpfr_clear(an1);
 		mpfr_clear(sn);
 		mpfr_clear(tmp);
+		mpfr_clear(start);
 		mpfr_clears(t, m1, m2, (mpfr_ptr)0);
 	}
 	mpfr_set(rop, an_c[n], round);
