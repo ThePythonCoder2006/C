@@ -28,7 +28,7 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
 
 //--------------------------------------------------------------------------------------------
 
-#define DIGITS 60000100
+#define DIGITS 10000100
 
 #define CONV 3.321928
 
@@ -39,6 +39,14 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
 #define CACHE (ITER + 1)
 
 //--------------------------------------------------------------------------------------------
+
+mpfr_t buffer;
+
+mpfr_t sn_act, sn_prev;
+
+mpfr_t snx_act, snx_prev;
+
+mpfr_t an_act, an_prev;
 
 mpfr_t sn_c[CACHE];
 mpfr_t snx_c[CACHE];
@@ -83,9 +91,9 @@ int main(void)
 	// printf("PI=\n");
 	// mpfr_out_str(stdout, 10, 0, pi, 0);
 
-	FILE *out = fopen("out.txt", "w");
+	FILE *out = fopen("pi-out.txt", "w");
 
-	mpfr_fprintf(out, "%.60000000Rf\n", pi);
+	mpfr_fprintf(out, "%.10000000Rf\n", pi);
 
 	mpq_clear(a0);
 	mpfr_clear(pi);
@@ -220,9 +228,8 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 
 		// mpfr_printf("an-1: %.60Rf\nt : %.60Rf\nm1 : %.60Rf\nm2 : %.60Rf\n", an1, t, m1, m2);
 
-		mpfr_t tmp, start;
+		mpfr_t tmp;
 		mpfr_init2(tmp, prec);
-		mpfr_init2(start, prec);
 
 		mpfr_mul_si(an_c[n], m1, -4, round);
 		mpfr_mul_si(tmp, m2, -12, round);
@@ -238,8 +245,8 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 		mpfr_neg(an_c[n], an_c[n], round);
 		// mpfr_printf("PLUS: %.60Rf\n", an_c[n]);
 
-		mpfr_mul_ui(start, m1, 16, round);
-		mpfr_mul(start, start, an1, round);
+		mpfr_mul_ui(tmp, m1, 16, round);
+		mpfr_mul(tmp, tmp, an1, round);
 		// mpfr_printf("start: %.60Rf\n", start);
 
 		// double dstart = mpfr_get_d(start, round);
@@ -247,13 +254,12 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 
 		// printf("%f - %f = %f\n", dstart, plus, dstart - plus);
 
-		mpfr_sub(an_c[n], start, an_c[n], round);
+		mpfr_sub(an_c[n], tmp, an_c[n], round);
 		// mpfr_printf("an: %.60Rf\n", an_c[n]);
 
 		mpfr_clear(an1);
 		mpfr_clear(sn);
 		mpfr_clear(tmp);
-		mpfr_clear(start);
 		mpfr_clears(t, m1, m2, (mpfr_ptr)0);
 	}
 	mpfr_set(rop, an_c[n], round);

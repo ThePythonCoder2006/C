@@ -1,8 +1,13 @@
 #include <stdio.h>
-#include "dy_array.h"
+
+void intswap(int **a, int **b)
+{
+    int *tmp = *a;
+    *a = *b;
+    *b = *tmp;
+}
 
 int main(void)
 {
-    int_Arr *arr;
     return 0;
 }
