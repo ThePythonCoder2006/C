@@ -72,7 +72,7 @@ int main(void)
 
 	mpfr_set_q(an, a0, 0);
 
-	mpfr_an(an, 1, PREC, 0);
+	mpfr_an(an, 2, PREC, 0);
 
 	mpfr_ui_div(pi, 1, an, 0);
 
