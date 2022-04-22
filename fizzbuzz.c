@@ -5,7 +5,7 @@ int main(int argc, char **argv)
 {
   if (argc != 2)
   {
-    fprintf(stderr, "[ERROR] to many args provided ! (%i)\n", argc);
+    fprintf(stderr, "[ERROR] to many or not enought args provided ! (%i)\n", argc);
     exit(1);
   }
 

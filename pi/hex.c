@@ -21,10 +21,11 @@ void mpfr_list_init2(const int prec, mpfr_t list[], size_t size);
 void mpfr_list_clear(mpfr_t list[], size_t size);
 
 void mpfr_qtrt(mpfr_t rop, mpfr_t op, mpfr_rnd_t round);
-void mpfr_snx_init();
-void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
-void mpfr_snx(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
-void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
+void mpfr_ui_div_ui(mpfr_t rop, unsigned int op1, unsigned int op2, mpfr_rnd_t round);
+
+void mpfr_sn(int n, mpfr_prec_t prec, mpfr_rnd_t round);
+void mpfr_snx(int n, mpfr_prec_t prec, mpfr_rnd_t round);
+void mpfr_an(int n, mpfr_prec_t prec, mpfr_rnd_t round);
 
 //--------------------------------------------------------------------------------------------
 
@@ -38,45 +39,52 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round);
 
 //--------------------------------------------------------------------------------------------
 
-mpfr_t buffer;
+// mpfr_t buffer;
 
 mpfr_t sn, snx, an;
 mpfr_t sn_p, snx_p, an_p;
 
-mpq_t a0;
-mpfr_t s1;
-
 int main(void)
 {
-	mpq_init(a0);
-	mpq_set_ui(a0, 1, 3);
+	exit(1);
+	int print_prec = 1100;
+	if (print_prec != PREC)
+	{
+		fprintf(stderr, "need to change value into mpfr_fprintf, line: 81");
+		exit(EXIT_FAILURE); // exit(1)
+	}
 
 	mpfr_inits2(PREC, sn, snx, an, (mpfr_ptr)0);
 	mpfr_inits2(PREC, sn_p, snx_p, an_p, (mpfr_ptr)0);
-	mpfr_init2(s1, PREC);
 
 	mpfr_t pi;
 	mpfr_init2(pi, PREC);
 
 	//----------------------------------
-	mpfr_init2(sn, PREC);
 
-	// init s1
-	mpfr_sqrt_ui(s1, 2, 0);
-	mpfr_sub_ui(s1, s1, 1, 0);
-
-	// mpfr_sn(sn, 1, PREC, 0);
-	// mpfr_snx(snx, 1, PREC, 0);
+	// initialize th value of sn to s1 (sqrt(2) - 1)
+	mpfr_sqrt_ui(sn, 2, 0);
+	mpfr_sub_ui(sn, sn, 1, 0);
 
 	//----------------------------------
 
-	mpfr_set_q(an, a0, 0);
+	// initialize th value of an to a0 (1/3)
+	mpfr_ui_div_ui(an, 1, 3, 0);
 
-	mpfr_an(an, 2, PREC, 0);
+	//----------------------------------
 
 	mpfr_ui_div(pi, 1, an, 0);
 
-	mpfr_printf("\nsn: %.60Rf\nsnx: %.60Rf", sn, snx);
+	for (int i = 1; i <= ITER; ++i)
+	{
+		mpfr_snx(i, PREC, 0);
+
+		mpfr_an(i, PREC, 0);
+
+		mpfr_sn(i + 1, PREC, 0);
+	}
+
+	// mpfr_printf("\nsn: %.60Rf\nsnx: %.60Rf", sn, snx);
 
 	FILE *out = fopen("pi-out.txt", "w");
 
@@ -84,13 +92,11 @@ int main(void)
 
 	fclose(out);
 
-	mpq_clear(a0);
 	mpfr_clear(pi);
 	mpfr_clears(sn, snx, an, (mpfr_ptr)0);
 	mpfr_clears(sn_p, snx_p, an_p, (mpfr_ptr)0);
-	mpfr_clear(s1);
 	mpfr_free_cache();
-	return 0;
+	return EXIT_SUCCESS; // return 0
 }
 
 //--------------------------------------------------------------------------------------------
@@ -100,7 +106,13 @@ void mpfr_qtrt(mpfr_t rop, mpfr_t op, mpfr_rnd_t round)
 	mpfr_rootn_ui(rop, op, 4, round);
 }
 
-void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
+void mpfr_ui_div_ui(mpfr_t rop, unsigned int op1, unsigned int op2, mpfr_rnd_t round)
+{
+	mpfr_set_ui(rop, op1, round);
+	mpfr_div_ui(rop, rop, op2, round);
+}
+
+void mpfr_sn(int n, mpfr_prec_t prec, mpfr_rnd_t round)
 {
 	assert(n <= ITER);
 	assert(n >= -20);
@@ -109,8 +121,8 @@ void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 
 	if (n <= 1)
 	{
-		mpfr_set(rop, s1, round);
-		return;
+		fprintf(stderr, "[ERROR] could not proced (n <= 1)");
+		exit(EXIT_FAILURE);
 	}
 
 	mpfr_swap(sn, sn_p); // store the previous sn in the right varial and so frees the
@@ -119,7 +131,7 @@ void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 
 	mpfr_t sn_snx;
 	mpfr_init2(sn_snx, prec);
-	mpfr_snx(sn_snx, n - 1, prec, round);
+	// mpfr_snx(sn_snx, n - 1, prec, round);
 
 	mpfr_t u;
 	mpfr_init2(u, prec);
@@ -159,11 +171,9 @@ void mpfr_sn(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 	mpfr_clear(snx);
 	mpfr_clear(u);
 	mpfr_clear(t);
-
-	mpfr_set(rop, sn, round);
 }
 
-void mpfr_snx(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
+void mpfr_snx(int n, mpfr_prec_t prec, mpfr_rnd_t round)
 {
 	assert(n <= ITER);
 	assert(n >= -20);
@@ -171,36 +181,31 @@ void mpfr_snx(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 	mpfr_swap(snx, snx_p);
 
 	printf("(snx) n: %i\n", n);
-	mpfr_sn(snx, n, prec, round);
+	// mpfr_sn(snx, n, prec, round);
 	mpfr_pow_ui(snx, snx, 4, round);
 	mpfr_ui_sub(snx, 1, snx, round);
 	mpfr_qtrt(snx, snx, round);
-	mpfr_set(rop, snx, round);
 }
 
-void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
+void mpfr_an(int n, mpfr_prec_t prec, mpfr_rnd_t round)
 {
 	assert(n <= ITER);
 	printf("(an) n: %i\n", n);
 
 	if (n <= 0)
 	{
-		mpfr_set_q(rop, a0, round);
-		return;
+		fprintf(stderr, "[ERROR] could not proced (n <= 0)");
+		exit(EXIT_FAILURE); // exit(1)
 	}
 
 	mpfr_swap(an, an_p);
 
-	mpfr_t sn;
-	mpfr_init2(sn, prec);
-	mpfr_sn(sn, n, prec, round);
-
 	mpfr_t t, m1, m2;
 	mpfr_inits2(prec, t, m1, m2, (mpfr_ptr)0);
 
-	mpfr_snx(t, n - 1, prec, round);
+	// mpfr_snx(t, n - 1, prec, round);
 	mpfr_add_ui(t, t, 1, round);
-	mpfr_sub_ui(rop, t, 1, round);
+	// mpfr_sub_ui(rop, t, 1, round);
 
 	mpfr_add_ui(m1, sn, 1, round);
 	mpfr_div(m1, m1, t, round);
@@ -234,8 +239,6 @@ void mpfr_an(mpfr_t rop, int n, mpfr_prec_t prec, mpfr_rnd_t round)
 	mpfr_sub(an, tmp, an, round);
 	// mpfr_printf("an: %.60Rf\n", an_c[n]);
 
-	mpfr_clear(sn);
 	mpfr_clear(tmp);
 	mpfr_clears(t, m1, m2, (mpfr_ptr)0);
-	mpfr_set(rop, an, round);
 }
