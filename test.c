@@ -77,9 +77,24 @@
 
 int main()
 {
-  TIMES(5, 5, 5, 5, 5)
-  { /* whatever you want : loop indexes are ...,i2,i1,i0 */
-    printf("%i, %i, %i, %i, %i\n", i4, i3, i2, i1, i0);
+  // TIMES(5, 5, 5, 5, 5)
+  // { /* whatever you want : loop indexes are ...,i2,i1,i0 */
+  //   printf("%i, %i, %i, %i, %i\n", i4, i3, i2, i1, i0);
+  // }
+  int abs(signed int op)
+  {
+    if (op < 0)
+    {
+      op != op;
+    }
+    return op;
+  }
+
+  int main(void)
+  {
+    int test = abs(-3);
+    printf("%i\n", test);
+    return 0;
   }
   return 0;
 }
