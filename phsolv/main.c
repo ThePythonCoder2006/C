@@ -128,28 +128,28 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 
 			// copy the atom type
 			strncpy(mol.type[mol.a_count].type, atom_type, 2);
-
-			// update the number of time the atom is present
-			if (isdigit(stream[i + 1]))
-			{
-				++i;
-				char num[MAX_MOLECULE_SIZE];
-				const uint16_t start = i;
-				while (isdigit(stream[i + 1]))
-					++i;
-				strncpy(num, stream + start, i - start + 1);
-				num[i - start + 1] = 0; // add nul terminator
-
-				mol.type[mol.a_count].num = atoi(num);
-			}
-			else
-				mol.type[mol.a_count].num = 1;
-
-			continue;
 		}
-		// the atom has a one letter name
-		if (!is_valid_atom(strncpy(atom_type, stream + i, 1)))
-			return MOLECULE_ERROR;
+		else
+		{ // the atom has a one letter name
+			if (!is_valid_atom(strncpy(atom_type, stream + i, 1)))
+				return MOLECULE_ERROR;
+				}
+
+		// update the number of time the atom is present
+		if (isdigit(stream[i + 1]))
+		{
+			++i;
+			char num[MAX_MOLECULE_SIZE];
+			const uint16_t start = i;
+			while (isdigit(stream[i + 1]))
+				++i;
+			strncpy(num, stream + start, i - start + 1);
+			num[i - start + 1] = 0; // add nul terminator
+
+			mol.type[mol.a_count].num = atoi(num);
+		}
+		else
+			mol.type[mol.a_count].num = 1;
 	}
 
 	return mol;
