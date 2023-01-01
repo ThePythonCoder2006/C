@@ -47,7 +47,7 @@ const uint32_t atoms_list[26] = {
 
 typedef struct
 {
-	char type[2];
+	char type[3];
 	uint8_t num;
 } atom;
 
@@ -67,11 +67,17 @@ typedef struct
 		.a_count = UINT8_MAX, .name = "ERROR", .coeff = UINT8_MAX \
 	}
 
+enum
+{
+	EQUA_PROD,
+	EQUA_REACT,
+};
+
 #define MAX_EQ_SIZE 32
 typedef struct
 {
-	molecule react[MAX_EQ_SIZE],
-			prod[MAX_EQ_SIZE];
+	molecule mols[2][MAX_EQ_SIZE];
+	uint8_t counts[2];
 } equa;
 
 #define STRING_X(x) #x
@@ -86,20 +92,48 @@ molecule parse_molecule(const char *restrict const stream);
 
 int is_valid_atom(char atom[3]);
 
+int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id);
+
 int main(int argc, char **argv)
 {
 	--argc, ++argv; // do not care about the program name
 
 	printf("please write your unbalanced chemical equasion below :\n");
 
-	// uint8_t react = 1; // are the comps getting read reagents
+	equa equa = {.counts = {0, 0}};
+
+	uint8_t react = 1; // are the comps getting read reagents
 	char tmp;
 	for (uint8_t i = 0;; ++i)
 	{
 		char buff[MAX_MOLECULE_SIZE];
 		fscanf(stdin, "%" STRINGIFY(MAX_MOLECULE_SIZE) "s", buff);
-		parse_molecule(buff);
+		if (buff[0] == '+')
+			continue;
+
+		if (buff[0] == '=')
+		{
+			react = 0;
+			printf("\n=>");
+			continue;
+		}
+
+		equa.mols[react][equa.counts[react]++] = parse_molecule(buff);
+
 		putchar('\n');
+
+		for (uint8_t j = 0; j < equa.counts[react]; ++j)
+		{
+			for (uint8_t k = 0; k < equa.mols[react][j].a_count; ++k)
+				printf("%s%" PRIu8 "", equa.mols[react][j].type[k].type, equa.mols[react][j].type[k].num);
+			printf(" + ");
+		}
+
+		putchar('\n');
+
+		for (uint8_t j = 0; j < equa.counts[react]; ++j)
+			printf("%s + ", equa.mols[react][j].name);
+
 		if (fscanf(stdin, "%c", &tmp), tmp == '\n')
 			break;
 	}
@@ -110,15 +144,16 @@ int main(int argc, char **argv)
 molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 {
 	molecule mol = {.a_count = 0};
-	char atom_type[3] = "\0\0\0";
 
 	for (uint16_t i = 0; stream[i] != 0; ++mol.a_count, ++i)
 	{
+		char atom_type[3] = "\0\0\0";
+		uint8_t old, index;
+
 		if (IS_NOT_UPPER(stream[i]))
 			return MOLECULE_ERROR;
 
 		// the char is an uppercase letter
-
 		if (IS_LOWER(stream[i + 1])) // the atom has a two letter name
 		{
 			if (!is_valid_atom(strncpy(atom_type, stream + i, 2)))
@@ -127,13 +162,29 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 			++i;
 
 			// copy the atom type
-			strncpy(mol.type[mol.a_count].type, atom_type, 2);
+			if (old = is_in_molecule(mol, atom_type, &index))
+				--mol.a_count;
+			else
+			{
+				mol.type[mol.a_count].type[0] = atom_type[0];
+				mol.type[mol.a_count].type[1] = atom_type[1];
+				mol.type[mol.a_count].type[2] = 0;
+			}
 		}
 		else
 		{ // the atom has a one letter name
 			if (!is_valid_atom(strncpy(atom_type, stream + i, 1)))
 				return MOLECULE_ERROR;
-				}
+
+			// copy the atom type
+			if (old = is_in_molecule(mol, atom_type, &index))
+				--mol.a_count;
+			else
+			{
+				mol.type[mol.a_count].type[0] = atom_type[0];
+				mol.type[mol.a_count].type[1] = 0; // add the null terminator
+			}
+		}
 
 		// update the number of time the atom is present
 		if (isdigit(stream[i + 1]))
@@ -146,11 +197,21 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 			strncpy(num, stream + start, i - start + 1);
 			num[i - start + 1] = 0; // add nul terminator
 
-			mol.type[mol.a_count].num = atoi(num);
+			if (old)
+				mol.type[index].num += atoi(num);
+			else
+				mol.type[mol.a_count].num = atoi(num);
 		}
 		else
-			mol.type[mol.a_count].num = 1;
+		{
+			if (old)
+				++mol.type[index].num;
+			else
+				mol.type[mol.a_count].num = 1;
+		}
 	}
+
+	strncpy(mol.name, stream, strlen(stream));
 
 	return mol;
 }
@@ -165,8 +226,21 @@ int is_valid_atom(char atom[3])
 		return ((atoms_list[atom[0] - 'A'] >> ATOM_LIST_SINGLE_LETTER_OFFSET) & 1);
 
 	// atom is two letters long
+
 	// check if second char is a lowercase letter
 	if (IS_NOT_LOWER(atom[1]))
 		return 0;
 	return ((atoms_list[atom[0] - 'A'] >> ((ATOM_LIST_LETTER_OFFSET) + 26 - (atom[1] - 'a') - 1)) & 1);
+}
+
+int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id)
+{
+	for (uint8_t i = 0; i < molecule.a_count; ++i)
+		if (strcmp(molecule.type[i].type, atom_type) == 0) // if the two type are the same, the atom is already present
+		{
+			*id = i;
+			return 1;
+		}
+
+	return 0;
 }
