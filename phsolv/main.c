@@ -13,10 +13,11 @@
 0b01100101101001110010111010000000
 */
 
-#define ATOM_LIST_LETTER_OFFSET (32 - 26)
+typedef uint32_t atom_list[26];
+
 #define ATOM_LIST_SINGLE_LETTER_OFFSET (0)
 
-const uint32_t atoms_list[26] = {
+const atom_list atoms_list = {
 		/* */ /*abcdefghijklmnopqrstuvwxyz*/
 		/*A*/ 0b00100010000110000111100000000000,
 		/*B*/ 0b10001001101000000100000000000001,
@@ -59,7 +60,7 @@ typedef struct
 	atom type[MOLECULE_MAX_ATOM_COUNT];
 	uint8_t a_count; // the number of atoms in the molecule
 	int8_t tot_charge;
-	uint16_t coeff;
+	uint8_t coeff;
 } molecule;
 #define MOLECULE_ERROR                                        \
 	(molecule)                                                  \
@@ -91,8 +92,11 @@ typedef struct
 molecule parse_molecule(const char *restrict const stream);
 
 int is_valid_atom(char atom[3]);
-
 int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id);
+uint8_t get_multi_digit_number(const char *stream, uint8_t *num_len);
+void print_molecule(const molecule mol);
+void print_equa(equa equa);
+equa solve_equa(equa eq);
 
 int main(int argc, char **argv)
 {
@@ -100,7 +104,7 @@ int main(int argc, char **argv)
 
 	printf("please write your unbalanced chemical equasion below :\n");
 
-	equa equa = {.counts = {0, 0}};
+	equa eq = {.counts = {0, 0}};
 
 	uint8_t react = 1; // are the comps getting read reagents
 	char tmp;
@@ -114,41 +118,47 @@ int main(int argc, char **argv)
 		if (buff[0] == '=')
 		{
 			react = 0;
-			printf("\n=>");
 			continue;
 		}
 
-		equa.mols[react][equa.counts[react]++] = parse_molecule(buff);
-
-		putchar('\n');
-
-		for (uint8_t j = 0; j < equa.counts[react]; ++j)
-		{
-			for (uint8_t k = 0; k < equa.mols[react][j].a_count; ++k)
-				printf("%s%" PRIu8 "", equa.mols[react][j].type[k].type, equa.mols[react][j].type[k].num);
-			printf(" + ");
-		}
-
-		putchar('\n');
-
-		for (uint8_t j = 0; j < equa.counts[react]; ++j)
-			printf("%s + ", equa.mols[react][j].name);
+		eq.mols[react][eq.counts[react]++] = parse_molecule(buff);
 
 		if (fscanf(stdin, "%c", &tmp), tmp == '\n')
 			break;
 	}
+
+	print_equa(eq);
+
+	const equa solved_equa = solve_equa(eq);
 
 	return 0;
 }
 
 molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 {
-	molecule mol = {.a_count = 0};
+	molecule mol = {.a_count = 0, .coeff = 1}; // assume that there is one molecule, will be changed if necessary
 
-	for (uint16_t i = 0; stream[i] != 0; ++mol.a_count, ++i)
+	uint8_t start_offset = 0;
+
+	if (isdigit(stream[0])) // there is a coefficiant before the molecule
+	{
+		uint8_t num, num_len;
+
+		num = get_multi_digit_number(stream, &num_len);
+
+		mol.coeff = num;
+		start_offset = num_len;
+	}
+
+	strncpy(mol.name, stream + start_offset, strlen(stream));
+
+	// parse the atoms
+	for (uint16_t i = start_offset; stream[i] != 0; ++mol.a_count, ++i)
 	{
 		char atom_type[3] = "\0\0\0";
 		uint8_t old, index;
+
+		uint8_t num, num_len;
 
 		if (IS_NOT_UPPER(stream[i]))
 			return MOLECULE_ERROR;
@@ -162,7 +172,7 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 			++i;
 
 			// copy the atom type
-			if (old = is_in_molecule(mol, atom_type, &index))
+			if ((old = is_in_molecule(mol, atom_type, &index)))
 				--mol.a_count;
 			else
 			{
@@ -177,7 +187,7 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 				return MOLECULE_ERROR;
 
 			// copy the atom type
-			if (old = is_in_molecule(mol, atom_type, &index))
+			if ((old = is_in_molecule(mol, atom_type, &index)))
 				--mol.a_count;
 			else
 			{
@@ -186,32 +196,76 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 			}
 		}
 
-		// update the number of time the atom is present
-		if (isdigit(stream[i + 1]))
+		if (!isdigit(stream[i + 1])) // the atom has no digit after it, it is present a single time and has no charge
 		{
-			++i;
-			char num[MAX_MOLECULE_SIZE];
-			const uint16_t start = i;
-			while (isdigit(stream[i + 1]))
-				++i;
-			strncpy(num, stream + start, i - start + 1);
-			num[i - start + 1] = 0; // add nul terminator
-
 			if (old)
-				mol.type[index].num += atoi(num);
+				++mol.type[index].num;
 			else
-				mol.type[mol.a_count].num = atoi(num);
+				mol.type[mol.a_count].num = 1;
+
+			if (stream[i + 1] == '+' || stream[i + 1] == '-')
+			{
+				if (stream[i + 1] == '+')
+					++mol.tot_charge;
+				else
+					--mol.tot_charge;
+				++i;
+			}
+			continue;
 		}
-		else
+
+		num_len = 0;
+		num = get_multi_digit_number(stream + i + 1, &num_len);
+		i += num_len;
+
+		if (stream[i + 1] != '+' && stream[i + 1] != '-') // start by atom count
 		{
+			if (old)
+				mol.type[index].num += num;
+			else
+				mol.type[mol.a_count].num = num;
+
+			if (stream[i + 1] != ',' && stream[i + 1] != '^') // if there are no charges
+				continue;
+			++i;
+
+			if (!isdigit(stream[i + 1])) // there is a single charge (+ or -)
+			{
+				if (stream[i + 1] == '+')
+					++mol.tot_charge;
+				else
+					--mol.tot_charge;
+				++i;
+				continue;
+			}
+
+			num = get_multi_digit_number(stream + i + 1, &num_len);
+			i += num_len;
+
+			if (stream[i + 1] != '+' && stream[i + 1] != '-')
+				continue;
+
+			if (stream[i + 1] == '+')
+				mol.tot_charge += num;
+			else
+				mol.tot_charge -= num;
+			i += 2;
+		}
+		else // multi digit charge without atom number (= only one atom)
+		{
+			if (stream[i + 1] == '+') // multi digit positive charge
+				mol.tot_charge += num;
+			else // multi digit negative charge
+				mol.tot_charge -= num;
+			++i;
+
+			// set the atom count for this particular atom to one
 			if (old)
 				++mol.type[index].num;
 			else
 				mol.type[mol.a_count].num = 1;
 		}
 	}
-
-	strncpy(mol.name, stream, strlen(stream));
 
 	return mol;
 }
@@ -230,7 +284,7 @@ int is_valid_atom(char atom[3])
 	// check if second char is a lowercase letter
 	if (IS_NOT_LOWER(atom[1]))
 		return 0;
-	return ((atoms_list[atom[0] - 'A'] >> ((ATOM_LIST_LETTER_OFFSET) + 26 - (atom[1] - 'a') - 1)) & 1);
+	return ((atoms_list[atom[0] - 'A'] >> (32 - (atom[1] - 'a') - 1)) & 1);
 }
 
 int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id)
@@ -243,4 +297,100 @@ int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id)
 		}
 
 	return 0;
+}
+
+uint8_t get_multi_digit_number(const char *stream, uint8_t *num_len)
+{
+	if (!isdigit(stream[0]))
+		return 0;
+
+	char num[MAX_MOLECULE_SIZE];
+	uint8_t i = 0;
+	while (isdigit(stream[i + 1]))
+		++i;
+
+	strncpy(num, stream, i + 1);
+	num[i + 1] = 0; // add nul terminator
+
+	*num_len = i + 1;
+
+	return atoi(num);
+}
+
+void print_molecule(const molecule mol)
+{
+
+	printf("%" PRIu8, mol.coeff);
+	for (uint8_t k = 0; k < mol.a_count; ++k)
+		printf("%s%" PRIu8, mol.type[k].type, mol.type[k].num);
+
+	if (mol.tot_charge != 0)
+		printf(",%i%c", abs(mol.tot_charge), mol.tot_charge >= 0 ? '+' : '-');
+	return;
+}
+
+void print_equa(equa equa)
+{
+	print_molecule(equa.mols[EQUA_REACT][0]);
+	for (uint8_t i = 1; i < equa.counts[EQUA_REACT]; ++i)
+	{
+		printf(" + ");
+		print_molecule(equa.mols[EQUA_REACT][i]);
+	}
+
+	printf(" => ");
+
+	print_molecule(equa.mols[EQUA_PROD][0]);
+	for (uint8_t i = 1; i < equa.counts[EQUA_PROD]; ++i)
+	{
+		printf(" + ");
+		print_molecule(equa.mols[EQUA_PROD][i]);
+	}
+
+	return;
+}
+
+int check_solvability(equa eq)
+{
+	atom_list list;
+
+	// listing all the atoms in the reagents
+	for (uint8_t i = 0; i < eq.counts[EQUA_REACT]; ++i)
+	{
+		const molecule mol = eq.mols[EQUA_REACT][i];
+		for (uint8_t j = 0; j < mol.a_count; ++j)
+		{
+			const atom atom = mol.type[j];
+			if (atom.type[1] == 0) // the atom is single lettered
+				list[atom.type[0] - 'A'] |= 1 << ATOM_LIST_SINGLE_LETTER_OFFSET;
+			else // the atom is multi lettered
+				list[atom.type[0] - 'A'] |= 1 << (32 - (atom.type[1] - 'a'));
+		}
+	}
+
+	// checking if all the atoms present in the reagent are also present in the products
+	for (uint8_t i = 0; i < eq.counts[EQUA_REACT]; ++i)
+	{
+		const molecule mol = eq.mols[EQUA_REACT][i];
+		for (uint8_t j = 0; j < mol.a_count; ++j)
+		{
+			const atom atom = mol.type[j];
+			if (atom.type[1] == 0) // the atom is single lettered
+				list[atom.type[0] - 'A'] |= 1 << ATOM_LIST_SINGLE_LETTER_OFFSET;
+			else // the atom is multi lettered
+				list[atom.type[0] - 'A'] |= 1 << (32 - (atom.type[1] - 'a'));
+		}
+	}
+
+	return;
+}
+
+equa solve_equa(equa eq)
+{
+	equa s_eq = {.counts = {0, 0}}; // the solved chemical equasion
+
+	if (check_solvability(eq) == 0)
+		return eq;
+
+	return s_eq;
 }
