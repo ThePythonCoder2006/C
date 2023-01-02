@@ -91,7 +91,8 @@ typedef struct
 
 molecule parse_molecule(const char *restrict const stream);
 
-int is_valid_atom(char atom[3]);
+static inline int is_in_atom_list(char atom[3], const atom_list list);
+static inline int is_valid_atom(char atom[3]);
 int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id);
 uint8_t get_multi_digit_number(const char *stream, uint8_t *num_len);
 void print_molecule(const molecule mol);
@@ -270,21 +271,35 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 	return mol;
 }
 
-int is_valid_atom(char atom[3])
+static inline int is_in_atom_list(char atom[3], const atom_list list)
 {
 	// check if first char is an uppercase letter
 	if (IS_NOT_UPPER(atom[0]))
 		return 0;
 
 	if (atom[1] == 0) // atom is one letter long
-		return ((atoms_list[atom[0] - 'A'] >> ATOM_LIST_SINGLE_LETTER_OFFSET) & 1);
+		return ((list[atom[0] - 'A'] >> ATOM_LIST_SINGLE_LETTER_OFFSET) & 1);
 
 	// atom is two letters long
 
 	// check if second char is a lowercase letter
 	if (IS_NOT_LOWER(atom[1]))
 		return 0;
-	return ((atoms_list[atom[0] - 'A'] >> (32 - (atom[1] - 'a') - 1)) & 1);
+
+	return ((list[atom[0] - 'A'] >> (32 - (atom[1] - 'a') - 1)) & 1);
+}
+
+static inline int is_valid_atom(char atom[3])
+{
+	// check if first char is an uppercase letter
+	if (IS_NOT_UPPER(atom[0]))
+		return 0;
+
+	// check if second char is a lowercase letter
+	if (IS_NOT_LOWER(atom[1]))
+		return 0;
+
+	return is_in_atom_list(atom, atoms_list);
 }
 
 int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id)
@@ -374,11 +389,8 @@ int check_solvability(equa eq)
 		const molecule mol = eq.mols[EQUA_REACT][i];
 		for (uint8_t j = 0; j < mol.a_count; ++j)
 		{
-			const atom atom = mol.type[j];
-			if (atom.type[1] == 0) // the atom is single lettered
-				list[atom.type[0] - 'A'] |= 1 << ATOM_LIST_SINGLE_LETTER_OFFSET;
-			else // the atom is multi lettered
-				list[atom.type[0] - 'A'] |= 1 << (32 - (atom.type[1] - 'a'));
+			if (!is_in_atom_list(mol.type[j].type, list))
+				return 0;
 		}
 	}
 
