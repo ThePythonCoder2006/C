@@ -62,10 +62,12 @@ typedef struct
 	int8_t tot_charge;
 	uint8_t coeff;
 } molecule;
-#define MOLECULE_ERROR                                        \
-	(molecule)                                                  \
-	{                                                           \
-		.a_count = UINT8_MAX, .name = "ERROR", .coeff = UINT8_MAX \
+#define MOLECULE_ERROR    \
+	(molecule)              \
+	{                       \
+		.a_count = UINT8_MAX, \
+		.name = "ERROR",      \
+		.coeff = UINT8_MAX    \
 	}
 
 enum
@@ -79,7 +81,25 @@ typedef struct
 {
 	molecule mols[2][MAX_EQ_SIZE];
 	uint8_t counts[2];
-} equa;
+	atom_list atoms_used;
+} c_equa;
+/*
+a chemical equation :
+mols[EQUA_REACT] is the reagent side of the equation
+counts[EQUA_REACT] is the number of moelcules in the reagent side of the equation
+the same with EQUA_PROD for the product side of the equation
+*/
+
+typedef struct
+{
+	uint32_t num, denom;
+} ratio;
+
+typedef struct
+{
+	ratio **coeff;
+	uint8_t unkown_num;
+} sys_eq;
 
 #define STRING_X(x) #x
 #define STRINGIFY(x) STRING_X(x)
@@ -91,21 +111,23 @@ typedef struct
 
 molecule parse_molecule(const char *restrict const stream);
 
-static inline int is_in_atom_list(char atom[3], const atom_list list);
-static inline int is_valid_atom(char atom[3]);
+static inline int is_in_atom_list(const char atom[3], const atom_list list);
+static inline int is_valid_atom(const char atom[3]);
 int is_in_molecule(molecule molecule, char atom_type[3], uint8_t *id);
 uint8_t get_multi_digit_number(const char *stream, uint8_t *num_len);
 void print_molecule(const molecule mol);
-void print_equa(equa equa);
-equa solve_equa(equa eq);
+void print_equa(c_equa c_equa);
+c_equa solve_equa(c_equa eq);
+sys_eq init_sys_equa(const uint8_t n);
+void print_sys_eq(const sys_eq eq);
 
 int main(int argc, char **argv)
 {
 	--argc, ++argv; // do not care about the program name
 
-	printf("please write your unbalanced chemical equasion below :\n");
+	printf("please write your unbalanced chemical equation below :\n");
 
-	equa eq = {.counts = {0, 0}};
+	c_equa eq = {.counts = {0, 0}};
 
 	uint8_t react = 1; // are the comps getting read reagents
 	char tmp;
@@ -129,8 +151,12 @@ int main(int argc, char **argv)
 	}
 
 	print_equa(eq);
+	putchar('\n');
 
-	const equa solved_equa = solve_equa(eq);
+	const c_equa solved_equa = solve_equa(eq);
+
+	print_equa(solved_equa);
+	putchar('\n');
 
 	return 0;
 }
@@ -271,7 +297,7 @@ molecule parse_molecule(const char stream[MAX_MOLECULE_SIZE])
 	return mol;
 }
 
-static inline int is_in_atom_list(char atom[3], const atom_list list)
+static inline int is_in_atom_list(const char atom[3], const atom_list list)
 {
 	// check if first char is an uppercase letter
 	if (IS_NOT_UPPER(atom[0]))
@@ -289,14 +315,10 @@ static inline int is_in_atom_list(char atom[3], const atom_list list)
 	return ((list[atom[0] - 'A'] >> (32 - (atom[1] - 'a') - 1)) & 1);
 }
 
-static inline int is_valid_atom(char atom[3])
+static inline int is_valid_atom(const char atom[3])
 {
 	// check if first char is an uppercase letter
 	if (IS_NOT_UPPER(atom[0]))
-		return 0;
-
-	// check if second char is a lowercase letter
-	if (IS_NOT_LOWER(atom[1]))
 		return 0;
 
 	return is_in_atom_list(atom, atoms_list);
@@ -344,7 +366,7 @@ void print_molecule(const molecule mol)
 	return;
 }
 
-void print_equa(equa equa)
+void print_equa(c_equa equa)
 {
 	print_molecule(equa.mols[EQUA_REACT][0]);
 	for (uint8_t i = 1; i < equa.counts[EQUA_REACT]; ++i)
@@ -365,9 +387,8 @@ void print_equa(equa equa)
 	return;
 }
 
-int check_solvability(equa eq)
+int is_solvable(c_equa eq)
 {
-	atom_list list;
 
 	// listing all the atoms in the reagents
 	for (uint8_t i = 0; i < eq.counts[EQUA_REACT]; ++i)
@@ -377,32 +398,63 @@ int check_solvability(equa eq)
 		{
 			const atom atom = mol.type[j];
 			if (atom.type[1] == 0) // the atom is single lettered
-				list[atom.type[0] - 'A'] |= 1 << ATOM_LIST_SINGLE_LETTER_OFFSET;
+				eq.atoms_used[atom.type[0] - 'A'] |= 1 << ATOM_LIST_SINGLE_LETTER_OFFSET;
 			else // the atom is multi lettered
-				list[atom.type[0] - 'A'] |= 1 << (32 - (atom.type[1] - 'a'));
+				eq.atoms_used[atom.type[0] - 'A'] |= 1 << (32 - (atom.type[1] - 'a'));
 		}
 	}
 
 	// checking if all the atoms present in the reagent are also present in the products
-	for (uint8_t i = 0; i < eq.counts[EQUA_REACT]; ++i)
+	for (uint8_t i = 0; i < eq.counts[EQUA_PROD]; ++i)
 	{
-		const molecule mol = eq.mols[EQUA_REACT][i];
+		const molecule mol = eq.mols[EQUA_PROD][i];
 		for (uint8_t j = 0; j < mol.a_count; ++j)
-		{
-			if (!is_in_atom_list(mol.type[j].type, list))
+			if (!is_in_atom_list(mol.type[j].type, eq.atoms_used))
 				return 0;
-		}
+	}
+
+	return 1;
+}
+
+sys_eq init_sys_equa(const uint8_t n)
+{
+	sys_eq eq = {.unkown_num = n};
+
+	// n unknowns => n equations in the system
+	eq.coeff = calloc(n, sizeof(ratio *));
+
+	// n unknowns => n + 1 terms in each of the equations
+	for (uint8_t i = 0; i < n; ++i)
+		eq.coeff[i] = calloc(n + 1, sizeof(ratio));
+
+	return eq;
+}
+
+void print_sys_eq(const sys_eq eq)
+{
+	for (uint8_t i = 0; i < eq.unkown_num; ++i)
+	{
+		for (uint8_t j = 0; j < eq.unkown_num; ++j)
+			printf("%" PRIu8 "/%" PRIu8 "x[%" PRIu8 "] + ", eq.coeff[i][j].num, eq.coeff[i][j].denom, j);
+		printf("%" PRIu8 "/%" PRIu8, eq.coeff[i][eq.unkown_num].num, eq.coeff[i][eq.unkown_num].denom);
+		putchar('\n');
 	}
 
 	return;
 }
 
-equa solve_equa(equa eq)
+// solving the chemical equation by substitution
+c_equa solve_equa(c_equa eq)
 {
-	equa s_eq = {.counts = {0, 0}}; // the solved chemical equasion
-
-	if (check_solvability(eq) == 0)
+	if (!is_solvable(eq))
+	{
+		fprintf(stderr, "the equation cannot be solved !!!\n");
 		return eq;
+	}
 
-	return s_eq;
+	sys_eq syst = init_sys_equa(eq.counts[EQUA_PROD] + eq.counts[EQUA_REACT]);
+
+	print_sys_eq(syst);
+
+	return eq;
 }
