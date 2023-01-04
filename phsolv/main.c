@@ -430,13 +430,34 @@ sys_eq init_sys_equa(const uint8_t n)
 	return eq;
 }
 
+void print_ratio(ratio val)
+{
+	if (val.denom == 0)
+	{
+		fprintf(stderr, "ERROR, division by zero !!!!\n");
+		return;
+	}
+
+	if (val.denom == 1)
+	{
+		printf("%" PRIu8, val.num);
+		return;
+	}
+
+	printf("%" PRIu8 "/%" PRIu8, val.num, val.denom);
+	return;
+}
+
 void print_sys_eq(const sys_eq eq)
 {
 	for (uint8_t i = 0; i < eq.unkown_num; ++i)
 	{
 		for (uint8_t j = 0; j < eq.unkown_num; ++j)
-			printf("%" PRIu8 "/%" PRIu8 "x[%" PRIu8 "] + ", eq.coeff[i][j].num, eq.coeff[i][j].denom, j);
-		printf("%" PRIu8 "/%" PRIu8, eq.coeff[i][eq.unkown_num].num, eq.coeff[i][eq.unkown_num].denom);
+		{
+			print_ratio(eq.coeff[i][j]);
+			printf(" + ");
+		}
+		print_ratio(eq.coeff[i][eq.unkown_num]);
 		putchar('\n');
 	}
 
