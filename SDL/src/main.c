@@ -25,7 +25,7 @@ SDL_Window *gWindow = NULL;
 // The window renderer
 SDL_Renderer *gRenderer = NULL;
 
-// Current displayed texture
+// The currently displayed texture
 SDL_Texture *gTexture = NULL;
 
 int main(int argc, char **argv)
@@ -36,64 +36,61 @@ int main(int argc, char **argv)
 	if (!init())
 	{
 		printf("Failed to initialize!\n");
+		return 1;
 	}
-	else
+
+	// Load media
+	if (!loadMedia())
 	{
-		// Load media
-		if (!loadMedia())
+		printf("Failed to load media!\n");
+		return 1;
+	}
+
+	int mx, my;
+
+	// Main loop flag
+	bool quit = false;
+
+	// Event handler
+	SDL_Event e;
+
+	// While application is running
+	while (!quit)
+	{
+		// Handle events on queue
+		while (SDL_PollEvent(&e) != 0)
 		{
-			printf("Failed to load media!\n");
+			// User requests quit
+			if (e.type == SDL_QUIT)
+				quit = true;
+			// If mouse event happened
+			if (e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP)
+				// Get mouse position
+				SDL_GetMouseState(&mx, &my);
 		}
-		else
-		{
-			// Main loop flag
-			bool quit = false;
 
-			// Event handler
-			SDL_Event e;
+		// Clear screen
+		SDL_RenderClear(gRenderer);
 
-			// While application is running
-			while (!quit)
-			{
-				// Handle events on queue
-				while (SDL_PollEvent(&e) != 0)
-				{
-					// User requests quit
-					if (e.type == SDL_QUIT)
-					{
-						quit = true;
-					}
-				}
+		// Display red circle texture
+		SDL_Rect view_port = {.x = mx - 50, .y = my - 50, .w = 100, .h = 100};
+		if (mx < 50)
+			view_port.x = 0;
 
-				// Clear screen
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				SDL_RenderClear(gRenderer);
+		if (my < 50)
+			view_port.y = 0;
 
-				// Render red filled quad
-				SDL_Rect fillRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0x00, 0xFF);
-				SDL_RenderFillRect(gRenderer, &fillRect);
+		if (mx > SCREEN_WIDTH - 50)
+			view_port.x = SCREEN_WIDTH - 100;
 
-				// Render green outlined quad
-				SDL_Rect outlineRect = {SCREEN_WIDTH / 6, SCREEN_HEIGHT / 6, SCREEN_WIDTH * 2 / 3, SCREEN_HEIGHT * 2 / 3};
-				SDL_SetRenderDrawColor(gRenderer, 0x00, 0xFF, 0x00, 0xFF);
-				SDL_RenderDrawRect(gRenderer, &outlineRect);
+		if (my > SCREEN_HEIGHT - 50)
+			view_port.y = SCREEN_HEIGHT - 100;
 
-				// Draw blue horizontal line
-				SDL_SetRenderDrawColor(gRenderer, 0x00, 0x00, 0xFF, 0xFF);
-				SDL_RenderDrawLine(gRenderer, 0, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT / 2);
+		SDL_RenderSetViewport(gRenderer, &view_port);
+		SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
 
-				// Draw vertical line of yellow dots
-				SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0x00, 0xFF);
-				for (int i = 0; i < SCREEN_HEIGHT; i += 4)
-				{
-					SDL_RenderDrawPoint(gRenderer, SCREEN_WIDTH / 2, i);
-				}
-
-				// Update screen
-				SDL_RenderPresent(gRenderer);
-			}
-		}
+		// Update screen
+		SDL_RenderPresent(gRenderer);
 	}
 
 	// Free resources and close SDL
@@ -123,17 +120,6 @@ bool init(void)
 		return false;
 	}
 
-	// Create renderer for window
-	gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
-	if (gRenderer == NULL)
-	{
-		printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
-		return false;
-	}
-
-	// Initialize renderer color
-	SDL_SetRenderDrawColor(gRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-
 	// Initialize PNG loading
 	int imgFlags = IMG_INIT_PNG;
 	if (!(IMG_Init(imgFlags) & imgFlags))
@@ -142,19 +128,39 @@ bool init(void)
 		return false;
 	}
 
+	gRenderer = SDL_CreateRenderer(gWindow, -1, SDL_RENDERER_ACCELERATED);
+	if (gRenderer == NULL)
+	{
+		printf("Renderer could not be create! : %s\n", SDL_GetError());
+		return false;
+	}
+
+	SDL_SetRenderDrawColor(gRenderer, 0x00, 0xFF, 0xFF, 0xFF);
+
 	return true;
 }
 
 bool loadMedia(void)
 {
+	// Load PNG Surface
+	gTexture = loadTexture("bin/circle.png");
+	if (gTexture == NULL)
+	{
+		printf("failed to load PNG image!\n");
+		return false;
+	}
+
 	return true;
 }
 
 void SDLclose(void)
 {
+	SDL_DestroyTexture(gTexture);
+	gTexture = NULL;
+
 	// Destroy window
-	SDL_DestroyRenderer(gRenderer);
 	SDL_DestroyWindow(gWindow);
+	SDL_DestroyRenderer(gRenderer);
 	gWindow = NULL;
 	gRenderer = NULL;
 
@@ -173,13 +179,16 @@ SDL_Texture *loadTexture(char *path)
 	if (loadedSurface == NULL)
 	{
 		printf("Unable to load image %s! SDL_image Error: %s\n", path, IMG_GetError());
-		return NULL;
+		return false;
 	}
 
-	// Create texture from surface pixels
+	// Convert surface to screen format
 	newTexture = SDL_CreateTextureFromSurface(gRenderer, loadedSurface);
 	if (newTexture == NULL)
-		printf("Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError());
+	{
+		printf("Unable to optimize image %s! SDL Error: %s\n", path, SDL_GetError());
+		return false;
+	}
 
 	// Get rid of old loaded surface
 	SDL_FreeSurface(loadedSurface);

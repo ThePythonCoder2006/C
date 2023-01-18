@@ -464,6 +464,15 @@ void print_sys_eq(const sys_eq eq)
 	return;
 }
 
+void set_up_sys_equa_from_c_equa(sys_eq *s_eq, c_equa c_eq)
+{
+	for (uint8_t i = 0; i < s_eq->unkown_num; ++i)
+	{
+	}
+
+	return;
+}
+
 // solving the chemical equation by substitution
 c_equa solve_equa(c_equa eq)
 {
@@ -474,6 +483,8 @@ c_equa solve_equa(c_equa eq)
 	}
 
 	sys_eq syst = init_sys_equa(eq.counts[EQUA_PROD] + eq.counts[EQUA_REACT]);
+
+	set_up_sys_equa_from_c_equa(&syst, eq);
 
 	print_sys_eq(syst);
 
