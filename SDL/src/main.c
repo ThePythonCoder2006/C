@@ -28,8 +28,10 @@ SDL_Renderer *gRenderer = NULL;
 // Current displayed texture
 SDL_Texture *gTexture = NULL;
 
-int main(int argc, char *args[])
+int main(int argc, char **argv)
 {
+	(void)argc, (void)argv;
+
 	// Start up SDL and create window
 	if (!init())
 	{
