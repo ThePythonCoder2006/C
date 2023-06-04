@@ -4,6 +4,7 @@
 		"sdl.h": "c",
 		"*.tcc": "c",
 		"fstream": "c",
-		"sdl_image.h": "c"
+		"sdl_image.h": "c",
+		"windows.h": "c"
 	}
 }

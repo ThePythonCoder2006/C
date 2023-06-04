@@ -1,36 +1,43 @@
-#include "stdio.h"
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
-  {
-    fprintf(stderr, "[ERROR] to many or not enought args provided ! (%i)\n", argc);
-    exit(1);
-  }
+	if (argc != 2)
+	{
+		fprintf(stderr, "[ERROR] to many or not enought args provided ! (%i)\n", argc);
+		exit(1);
+	}
 
-  int iter = atoi(argv[1]);
+	uint64_t iter = atoi(argv[1]);
 
-  printf("%i\n", iter);
+	printf("%" PRIu64 "\n", iter);
 
-  for (int i = 1; i <= iter; ++i)
-  {
-    if (i % 3 != 0 && i % 5 != 0)
-      printf("%i", i);
-    else
-    {
-      if (i % 3 == 0)
-      {
-        printf("fizz");
-      }
-      if (i % 5 == 0)
-      {
-        printf("buzz");
-      }
-    }
+	uint64_t multiple_of_three = 3;
+	uint64_t multiple_of_five = 5;
 
-    printf("\n");
-  }
+	for (uint64_t i = 1; i <= iter; ++i)
+	{
+		if (i != multiple_of_three && i != multiple_of_five)
+			printf("%" PRIu64, i);
+		else
+		{
+			if (i == multiple_of_three)
+			{
+				printf("fizz");
+				multiple_of_three += 3;
+			}
+			if (i == multiple_of_five)
+			{
+				printf("buzz");
+				multiple_of_five += 5;
+			}
+		}
 
-  return 0;
+		printf("\n");
+	}
+
+	return 0;
 }
